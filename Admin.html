@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpinPay PK - Admin Panel</title>
+    <!-- Firebase Integration -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary-color: #1a2a44;
+            --secondary-color: #27ae60;
+            --accent-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --light-color: #f4f7f9;
+            --dark-color: #162236;
+            --text-color: #bdc3c7;
+            --card-bg: #213555;
+            --input-bg: #1a2a44;
+            --border-color: #3a4a64;
+            --sidebar-bg: #162236;
+            --sidebar-hover: #1e2f4a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            padding: 1.5rem 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo h1 {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 0.85rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: var(--sidebar-hover);
+            color: white;
+        }
+
+        .nav-links a i {
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h2 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .stat-card.total-earnings { border-left-color: var(--secondary-color); }
+        .stat-card.total-withdrawals { border-left-color: var(--info-color); }
+        .stat-card.pending-requests { border-left-color: var(--warning-color); }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-header h3 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--accent-color);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        td {
+            color: var(--text-color);
+        }
+
+        .status {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status.pending {
+            background: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+        }
+
+        .status.approved {
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--accent-color);
+        }
+
+        .status.rejected {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .user-details {
+            background: rgba(255,255,255,0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .user-details p {
+            margin-bottom: 0.5rem;
+        }
+
+        .search-box {
+            display: flex;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px 0 0 8px;
+            background: var(--input-bg);
+            color: white;
+        }
+
+        .search-box button {
+            padding: 0 1.5rem;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .withdraw-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                padding: 1rem;
+            }
+            
+            .withdraw-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <h1>SpinPay PK</h1>
+            <p>Admin Panel</p>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="active" data-tab="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="#" data-tab="withdraw"><i class="fas fa-money-bill-wave"></i> Withdraw Requests</a></li>
+            <li><a href="#" data-tab="deposit"><i class="fas fa-credit-card"></i> Deposit Requests</a></li>
+            <li><a href="#" data-tab="withdraw-history"><i class="fas fa-history"></i> Withdraw History</a></li>
+            <li><a href="#" data-tab="deposit-history"><i class="fas fa-history"></i> Deposit History</a></li>
+            <li><a href="#" data-tab="users"><i class="fas fa-users"></i> Users</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <h2 id="page-title">Admin Dashboard</h2>
+            <div>
+                <span id="current-time"></span>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-container">
+                <div class="stat-card total-earnings">
+                    <h3>Total Earnings</h3>
+                    <div class="value" id="total-earnings">0 PKR</div>
+                </div>
+                <div class="stat-card total-withdrawals">
+                    <h3>Total Withdrawals Sent</h3>
+                    <div class="value" id="total-withdrawals">0 PKR</div>
+                </div>
+                <div class="stat-card pending-requests">
+                    <h3>Pending Requests</h3>
+                    <div class="value" id="pending-requests">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Activity</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-activity">
+                            <!-- Recent activity will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdraw Requests Tab -->
+        <div id="withdraw" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Pending Withdrawal Requests</h3>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="withdraw-search" placeholder="Search by user name, phone, or transaction ID">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User Details</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="withdraw-requests">
+                            <!-- Withdrawal requests will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Requests Tab -->
+        <div id="deposit" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Pending Deposit Requests</h3>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="deposit-search" placeholder="Search by user name, phone, or transaction ID">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User Details</th>
+                                <th>Amount</th>
+                                <th>TRX ID</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deposit-requests">
+                            <!-- Deposit requests will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdraw History Tab -->
+        <div id="withdraw-history" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Withdrawal History</h3>
+                </div>
+                <div class="tabs">
+                    <div class="tab active" data-status="all">All</div>
+                    <div class="tab" data-status="approved">Approved</div>
+                    <div class="tab" data-status="rejected">Rejected</div>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="withdraw-history-search" placeholder="Search by user name, phone, or transaction ID">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User Details</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="withdraw-history-list">
+                            <!-- Withdrawal history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit History Tab -->
+        <div id="deposit-history" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Deposit History</h3>
+                </div>
+                <div class="tabs">
+                    <div class="tab active" data-status="all">All</div>
+                    <div class="tab" data-status="approved">Approved</div>
+                    <div class="tab" data-status="rejected">Rejected</div>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="deposit-history-search" placeholder="Search by user name, phone, or transaction ID">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User Details</th>
+                                <th>Amount</th>
+                                <th>TRX ID</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deposit-history-list">
+                            <!-- Deposit history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>All Users</h3>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="user-search" placeholder="Search by name or phone number">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User Details</th>
+                                <th>Balance</th>
+                                <th>Wager Remaining</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-list">
+                            <!-- Users will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ====================================================================
+            // FIREBASE CONFIGURATION
+            // ====================================================================
+            const firebaseConfig = {
+                apiKey: "AIzaSyCZ7GPZk_pzXYU9K6r9LcREZeojJuaOLFo",
+                authDomain: "chatting-app-c3c61.firebaseapp.com",
+                databaseURL: "https://chatting-app-c3c61-default-rtdb.firebaseio.com",
+                projectId: "chatting-app-c3c61",
+                storageBucket: "chatting-app-c3c61.firebasestorage.app",
+                messagingSenderId: "490965928149",
+                appId: "1:490965928149:web:319ae6d32c961be1e3ba5c",
+                measurementId: "G-NQJG41N60E"
+            };
+
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
+            // ====================================================================
+            // STATE & DOM
+            // ====================================================================
+            let allUsers = {};
+            let allDeposits = [];
+            let allWithdrawals = [];
+            const dom = {
+                pageTitle: document.getElementById('page-title'),
+                currentTime: document.getElementById('current-time'),
+                totalEarnings: document.getElementById('total-earnings'),
+                totalWithdrawals: document.getElementById('total-withdrawals'),
+                pendingRequests: document.getElementById('pending-requests'),
+                recentActivity: document.getElementById('recent-activity'),
+                withdrawRequests: document.getElementById('withdraw-requests'),
+                depositRequests: document.getElementById('deposit-requests'),
+                withdrawHistoryList: document.getElementById('withdraw-history-list'),
+                depositHistoryList: document.getElementById('deposit-history-list'),
+                usersList: document.getElementById('users-list')
+            };
+
+            // ====================================================================
+            // UTILITY FUNCTIONS
+            // ====================================================================
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            };
+
+            const formatCurrency = (amount) => {
+                return parseFloat(amount).toFixed(2) + ' PKR';
+            };
+
+            const updateCurrentTime = () => {
+                const now = new Date();
+                dom.currentTime.textContent = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+            };
+
+            // ====================================================================
+            // NAVIGATION
+            // ====================================================================
+            const navLinks = document.querySelectorAll('.nav-links a');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Update active nav link
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Show corresponding tab
+                    const tabId = link.getAttribute('data-tab');
+                    tabContents.forEach(tab => tab.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Update page title
+                    dom.pageTitle.textContent = link.textContent.trim();
+                    
+                    // Load data for the tab if needed
+                    if (tabId === 'withdraw') loadWithdrawRequests();
+                    else if (tabId === 'deposit') loadDepositRequests();
+                    else if (tabId === 'withdraw-history') loadWithdrawHistory();
+                    else if (tabId === 'deposit-history') loadDepositHistory();
+                    else if (tabId === 'users') loadUsers();
+                });
+            });
+
+            // ====================================================================
+            // DATA LOADING FUNCTIONS
+            // ====================================================================
+            const loadAllData = () => {
+                // Load users
+                database.ref('users').on('value', (snapshot) => {
+                    allUsers = snapshot.val() || {};
+                    updateDashboard();
+                    loadUsers();
+                });
+
+                // Load deposit requests
+                database.ref('depositRequests').on('value', (snapshot) => {
+                    const deposits = snapshot.val() || {};
+                    allDeposits = Object.values(deposits);
+                    updateDashboard();
+                    loadDepositRequests();
+                    loadDepositHistory();
+                });
+
+                // Load withdrawal requests
+                database.ref('withdrawalRequests').on('value', (snapshot) => {
+                    const withdrawals = snapshot.val() || {};
+                    allWithdrawals = Object.values(withdrawals);
+                    updateDashboard();
+                    loadWithdrawRequests();
+                    loadWithdrawHistory();
+                });
+            };
+
+            const updateDashboard = () => {
+                // Calculate total earnings (sum of all approved deposits)
+                const totalEarnings = allDeposits
+                    .filter(d => d.status === 'success')
+                    .reduce((sum, deposit) => sum + deposit.amount, 0);
+                
+                dom.totalEarnings.textContent = formatCurrency(totalEarnings);
+
+                // Calculate total withdrawals sent (sum of all approved withdrawals)
+                const totalWithdrawalsSent = allWithdrawals
+                    .filter(w => w.status === 'success')
+                    .reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
+                
+                dom.totalWithdrawals.textContent = formatCurrency(totalWithdrawalsSent);
+
+                // Calculate pending requests
+                const pendingDeposits = allDeposits.filter(d => d.status === 'pending').length;
+                const pendingWithdrawals = allWithdrawals.filter(w => w.status === 'pending').length;
+                dom.pendingRequests.textContent = pendingDeposits + pendingWithdrawals;
+
+                // Update recent activity
+                updateRecentActivity();
+            };
+
+            const updateRecentActivity = () => {
+                const allActivities = [
+                    ...allDeposits.map(d => ({ ...d, type: 'Deposit' })),
+                    ...allWithdrawals.map(w => ({ ...w, type: 'Withdrawal' }))
+                ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
+
+                dom.recentActivity.innerHTML = '';
+                
+                allActivities.forEach(activity => {
+                    const user = allUsers[activity.userPhone] || { name: 'Unknown', phone: 'N/A' };
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${activity.type}</td>
+                        <td>${user.name} (${user.phone})</td>
+                        <td>${formatCurrency(activity.amount)}</td>
+                        <td>${formatDate(activity.time)}</td>
+                        <td><span class="status ${activity.status}">${activity.status}</span></td>
+                    `;
+                    
+                    dom.recentActivity.appendChild(row);
+                });
+            };
+
+            const loadWithdrawRequests = () => {
+                const pendingWithdrawals = allWithdrawals.filter(w => w.status === 'pending');
+                
+                dom.withdrawRequests.innerHTML = '';
+                
+                if (pendingWithdrawals.length === 0) {
+                    dom.withdrawRequests.innerHTML = '<tr><td colspan="5" style="text-align: center;">No pending withdrawal requests</td></tr>';
+                    return;
+                }
+                
+                pendingWithdrawals.forEach(withdrawal => {
+                    const user = allUsers[withdrawal.userPhone] || { name: 'Unknown', phone: 'N/A', accountType: 'N/A' };
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <strong>${user.name}</strong><br>
+                            <small>${user.phone} (${user.accountType})</small>
+                            <div class="user-details">
+                                <p><strong>Password:</strong> ${user.passwordHash || 'N/A'}</p>
+                            </div>
+                        </td>
+                        <td>${formatCurrency(withdrawal.amount)}</td>
+                        <td>${formatDate(withdrawal.time)}</td>
+                        <td><span class="status pending">Pending</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-sm approve-withdraw" data-id="${withdrawal.id}">Approve</button>
+                                <button class="btn btn-danger btn-sm reject-withdraw" data-id="${withdrawal.id}">Reject</button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    dom.withdrawRequests.appendChild(row);
+                });
+
+                // Add event listeners to action buttons
+                document.querySelectorAll('.approve-withdraw').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const requestId = btn.getAttribute('data-id');
+                        updateWithdrawalStatus(requestId, 'success');
+                    });
+                });
+
+                document.querySelectorAll('.reject-withdraw').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const requestId = btn.getAttribute('data-id');
+                        updateWithdrawalStatus(requestId, 'rejected');
+                    });
+                });
+            };
+
+            const loadDepositRequests = () => {
+                const pendingDeposits = allDeposits.filter(d => d.status === 'pending');
+                
+                dom.depositRequests.innerHTML = '';
+                
+                if (pendingDeposits.length === 0) {
+                    dom.depositRequests.innerHTML = '<tr><td colspan="6" style="text-align: center;">No pending deposit requests</td></tr>';
+                    return;
+                }
+                
+                pendingDeposits.forEach(deposit => {
+                    const user = allUsers[deposit.userPhone] || { name: 'Unknown', phone: 'N/A', accountType: 'N/A' };
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <strong>${user.name}</strong><br>
+                            <small>${user.phone} (${user.accountType})</small>
+                            <div class="user-details">
+                                <p><strong>Password:</strong> ${user.passwordHash || 'N/A'}</p>
+                            </div>
+                        </td>
+                        <td>${formatCurrency(deposit.amount)}</td>
+                        <td>${deposit.trxId || 'N/A'}</td>
+                        <td>${formatDate(deposit.time)}</td>
+                        <td><span class="status pending">Pending</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-sm approve-deposit" data-id="${deposit.id}">Approve</button>
+                                <button class="btn btn-danger btn-sm reject-deposit" data-id="${deposit.id}">Reject</button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    dom.depositRequests.appendChild(row);
+                });
+
+                // Add event listeners to action buttons
+                document.querySelectorAll('.approve-deposit').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const requestId = btn.getAttribute('data-id');
+                        updateDepositStatus(requestId, 'success');
+                    });
+                });
+
+                document.querySelectorAll('.reject-deposit').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const requestId = btn.getAttribute('data-id');
+                        updateDepositStatus(requestId, 'rejected');
+                    });
+                });
+            };
+
+            const loadWithdrawHistory = () => {
+                const statusFilter = document.querySelector('#withdraw-history .tab.active')?.getAttribute('data-status') || 'all';
+                let filteredWithdrawals = allWithdrawals;
+                
+                if (statusFilter !== 'all') {
+                    filteredWithdrawals = allWithdrawals.filter(w => w.status === statusFilter);
+                }
+                
+                dom.withdrawHistoryList.innerHTML = '';
+                
+                if (filteredWithdrawals.length === 0) {
+                    dom.withdrawHistoryList.innerHTML = '<tr><td colspan="4" style="text-align: center;">No withdrawal history found</td></tr>';
+                    return;
+                }
+                
+                filteredWithdrawals.forEach(withdrawal => {
+                    const user = allUsers[withdrawal.userPhone] || { name: 'Unknown', phone: 'N/A', accountType: 'N/A' };
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <strong>${user.name}</strong><br>
+                            <small>${user.phone} (${user.accountType})</small>
+                        </td>
+                        <td>${formatCurrency(withdrawal.amount)}</td>
+                        <td>${formatDate(withdrawal.time)}</td>
+                        <td><span class="status ${withdrawal.status}">${withdrawal.status}</span></td>
+                    `;
+                    
+                    dom.withdrawHistoryList.appendChild(row);
+                });
+            };
+
+            const loadDepositHistory = () => {
+                const statusFilter = document.querySelector('#deposit-history .tab.active')?.getAttribute('data-status') || 'all';
+                let filteredDeposits = allDeposits;
+                
+                if (statusFilter !== 'all') {
+                    filteredDeposits = allDeposits.filter(d => d.status === statusFilter);
+                }
+                
+                dom.depositHistoryList.innerHTML = '';
+                
+                if (filteredDeposits.length === 0) {
+                    dom.depositHistoryList.innerHTML = '<tr><td colspan="5" style="text-align: center;">No deposit history found</td></tr>';
+                    return;
+                }
+                
+                filteredDeposits.forEach(deposit => {
+                    const user = allUsers[deposit.userPhone] || { name: 'Unknown', phone: 'N/A', accountType: 'N/A' };
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <strong>${user.name}</strong><br>
+                            <small>${user.phone} (${user.accountType})</small>
+                        </td>
+                        <td>${formatCurrency(deposit.amount)}</td>
+                        <td>${deposit.trxId || 'N/A'}</td>
+                        <td>${formatDate(deposit.time)}</td>
+                        <td><span class="status ${deposit.status}">${deposit.status}</span></td>
+                    `;
+                    
+                    dom.depositHistoryList.appendChild(row);
+                });
+            };
+
+            const loadUsers = () => {
+                dom.usersList.innerHTML = '';
+                
+                Object.values(allUsers).forEach(user => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>
+                            <strong>${user.name}</strong><br>
+                            <small>${user.phone} (${user.accountType})</small>
+                            <div class="user-details">
+                                <p><strong>Password:</strong> ${user.passwordHash || 'N/A'}</p>
+                                <p><strong>Referrals:</strong> ${user.invitesCount || 0}/20</p>
+                            </div>
+                        </td>
+                        <td>${formatCurrency(user.balance || 0)}</td>
+                        <td>${formatCurrency(user.wagerToMeet || 0)}</td>
+                        <td>${formatDate(user.lastLogin || new Date())}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm view-user" data-phone="${user.phone}">View Details</button>
+                        </td>
+                    `;
+                    
+                    dom.usersList.appendChild(row);
+                });
+            };
+
+            // ====================================================================
+            // STATUS UPDATE FUNCTIONS
+            // ====================================================================
+            const updateWithdrawalStatus = (requestId, status) => {
+                database.ref('withdrawalRequests/' + requestId + '/status').set(status)
+                    .then(() => {
+                        alert(`Withdrawal request ${status === 'success' ? 'approved' : 'rejected'} successfully!`);
+                    })
+                    .catch(error => {
+                        console.error('Error updating withdrawal status:', error);
+                        alert('Error updating withdrawal status. Please try again.');
+                    });
+            };
+
+            const updateDepositStatus = (requestId, status) => {
+                database.ref('depositRequests/' + requestId + '/status').set(status)
+                    .then(() => {
+                        alert(`Deposit request ${status === 'success' ? 'approved' : 'rejected'} successfully!`);
+                    })
+                    .catch(error => {
+                        console.error('Error updating deposit status:', error);
+                        alert('Error updating deposit status. Please try again.');
+                    });
+            };
+
+            // ====================================================================
+            // EVENT LISTENERS FOR TABS AND SEARCH
+            // ====================================================================
+            // History tabs
+            document.querySelectorAll('#withdraw-history .tab, #deposit-history .tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const parent = tab.closest('.tabs');
+                    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    if (parent.closest('#withdraw-history')) {
+                        loadWithdrawHistory();
+                    } else {
+                        loadDepositHistory();
+                    }
+                });
+            });
+
+            // Search functionality
+            document.getElementById('withdraw-search').addEventListener('input', filterWithdrawRequests);
+            document.getElementById('deposit-search').addEventListener('input', filterDepositRequests);
+            document.getElementById('withdraw-history-search').addEventListener('input', filterWithdrawHistory);
+            document.getElementById('deposit-history-search').addEventListener('input', filterDepositHistory);
+            document.getElementById('user-search').addEventListener('input', filterUsers);
+
+            function filterWithdrawRequests() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = dom.withdrawRequests.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            }
+
+            function filterDepositRequests() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = dom.depositRequests.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            }
+
+            function filterWithdrawHistory() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = dom.withdrawHistoryList.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            }
+
+            function filterDepositHistory() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = dom.depositHistoryList.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            }
+
+            function filterUsers() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = dom.usersList.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            }
+
+            // ====================================================================
+            // INITIALIZATION
+            // ====================================================================
+            const initialize = () => {
+                updateCurrentTime();
+                setInterval(updateCurrentTime, 1000);
+                loadAllData();
+            };
+
+            // Start the application
+            initialize();
+        });
+    </script>
+</body>
+</html>
